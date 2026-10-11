@@ -64,7 +64,7 @@ test('search response keeps source IDs, codes, counts, and omitted-hit warning',
   assert.deepEqual(result.warnings, ['1 incomplete Grants.gov result(s) omitted.']);
 });
 
-test('posted detail presents provider fields and listed links without offering in-app reading', () => {
+test('posted detail presents provider fields and identifies listed attachments for reading', () => {
   const detail = mapDetailResponse(envelope({
     id: 359855, opportunityNumber: 'RFA-CA-27-020',
     opportunityTitle: 'Cancer <b>informatics</b>', owningAgencyCode: 'HHS-NIH11',
@@ -97,9 +97,10 @@ test('posted detail presents provider fields and listed links without offering i
   assert.equal(detail.documents.length, 2);
   assert.deepEqual(detail.documents[0], {
     title: 'Full notice.html', kind: 'Full Announcement', description: 'Publisher file',
+    sourceDocumentId: '352323',
     url: 'https://apply07.grants.gov/grantsws/rest/opportunity/att/download/352323',
   });
-  assert.equal(detail.documents[0].sourceDocumentId, undefined);
+  assert.equal(detail.documents[1].sourceDocumentId, undefined);
   assert.equal(detail.documents[1].url, 'https://www.nih.gov/example');
 });
 

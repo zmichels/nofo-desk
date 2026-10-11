@@ -60,7 +60,7 @@ test('detail sends a numeric ID and returns original source links', async () => 
     assert.equal(detail.synopsis, 'Official summary.');
     assert.equal(detail.documents[0].url,
       'https://apply07.grants.gov/grantsws/rest/opportunity/att/download/352323');
-    assert.equal(detail.documents[0].sourceDocumentId, undefined);
+    assert.equal(detail.documents[0].sourceDocumentId, '352323');
   });
   assert.deepEqual(sent, { opportunityId: 359855 });
 });
@@ -80,7 +80,33 @@ test('invalid IDs and provider failures do not become plausible results', async 
   });
 });
 
-test('direct provider mode links documents but cannot claim source reading', async () => {
-  await assert.rejects(providerDirectService.readListedDocument('359855', '352323'), /unavailable/);
-  await assert.rejects(providerDirectService.findSourcePassages('359855', '352323', 'budget', 5), /source reader/);
+test('direct provider mode reads only currently listed attachments and locates passages', async () => {
+  const documentUrl = 'https://apply07.grants.gov/grantsws/rest/opportunity/att/download/352323';
+  const calls = [];
+  await withFetch(async (url) => {
+    calls.push(url);
+    if (url === 'https://api.grants.gov/v1/api/fetchOpportunity') {
+      return providerResponse({
+        id: 359855, opportunityNumber: 'RFA-CA-27-020', opportunityTitle: 'Cancer informatics',
+        synopsisAttachmentFolders: [{ folderType: 'Full Announcement', synopsisAttachments: [
+          { id: 352323, fileName: 'Full notice.html' },
+        ] }],
+      });
+    }
+    assert.equal(url, documentUrl);
+    const response = new Response('<!doctype html><html><body><h2>Budget</h2><p>A budget narrative must be attached.</p></body></html>', {
+      headers: { 'Content-Type': 'text/html' },
+    });
+    Object.defineProperty(response, 'url', { value: documentUrl });
+    return response;
+  }, async () => {
+    await assert.rejects(providerDirectService.readListedDocument('359855', '999'), /not listed/);
+    const reading = await providerDirectService.readListedDocument('359855', '352323');
+    assert.equal(reading.fileName, 'Full notice.html');
+    assert.equal(reading.status, 'read');
+    const matches = await providerDirectService.findSourcePassages('359855', '352323', 'budget', 5);
+    assert.equal(matches.matchCount, 2);
+    assert.equal(matches.sourceVersion, reading.sourceVersion);
+  });
+  assert.equal(calls.filter((url) => url === documentUrl).length, 1);
 });

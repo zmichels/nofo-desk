@@ -232,8 +232,9 @@ function listedDocuments(data: JsonRecord): ListedDocument[] {
         title,
         kind: providerText(folder.folderType) || 'Attachment',
         description: providerText(attachment.fileDescription) || undefined,
-        // Direct-provider mode links the publisher's file. It does not claim
-        // to have read or indexed the file, so no in-app reader ID is exposed.
+        // The reader accepts only this listed, numeric attachment ID.
+        // Related links below remain link-outs rather than arbitrary fetches.
+        sourceDocumentId: id,
         url: id ? `${ATTACHMENT_URL}${id}` : undefined,
       });
     }

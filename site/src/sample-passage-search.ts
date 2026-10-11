@@ -14,8 +14,8 @@ function wordAwarePattern(value: string): RegExp {
   return new RegExp(`${before}${escaped}${after}`, 'iu');
 }
 
-// The published preview searches only its fictional blocks. The connected
-// client delegates this work to the Desk API, which checks the listed file.
+// Search only the text in a supplied reading. The caller establishes whether
+// those blocks came from a listed provider file or a fictional sample.
 export function searchSamplePassages(
   reading: ReadDocumentResult,
   query: string,

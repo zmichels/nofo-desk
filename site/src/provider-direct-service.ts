@@ -1,7 +1,13 @@
 import { buildSearchRequest, mapDetailResponse, mapSearchResponse } from './provider-mapping.ts';
-import type { NofoDeskService } from './types';
+import { findProviderPassages, readProviderDocument } from './provider-document-reader.ts';
+import type { NofoDeskService, ReadDocumentResult } from './types';
 
 const PROVIDER_API = 'https://api.grants.gov/v1/api';
+const readingByDocument = new Map<string, ReadDocumentResult>();
+
+function readingKey(opportunityId: string, sourceDocumentId: string): string {
+  return `${opportunityId}:${sourceDocumentId}`;
+}
 
 async function providerPost(path: string, body: object): Promise<unknown> {
   let response: Response;
@@ -30,8 +36,8 @@ async function providerPost(path: string, body: object): Promise<unknown> {
   }
 }
 
-// This browser-only path supplies provider metadata and original links. Reading
-// a listed file or locating passages still needs the separate source reader.
+// Source reading is limited to a listed Grants.gov attachment; a link to an
+// external agency page is never fetched through this browser adapter.
 export const providerDirectService: NofoDeskService = {
   async searchOpportunities(criteria) {
     const request = buildSearchRequest(criteria);
@@ -48,11 +54,25 @@ export const providerDirectService: NofoDeskService = {
     return mapDetailResponse(response, opportunityId);
   },
 
-  async readListedDocument() {
-    throw new Error('In-app document reading is unavailable here. Open the original source instead.');
+  async readListedDocument(opportunityId, sourceDocumentId) {
+    if (!/^[1-9]\d{0,11}$/.test(sourceDocumentId)) {
+      throw new Error('A valid listed Grants.gov attachment ID is required.');
+    }
+    const opportunity = await providerDirectService.getOpportunity(opportunityId);
+    const listed = opportunity.documents.find((document) => document.sourceDocumentId === sourceDocumentId);
+    if (!listed?.url) throw new Error('This attachment is not listed on the current provider record.');
+    const reading = await readProviderDocument(listed.url);
+    reading.fileName = listed.title;
+    const key = readingKey(opportunityId, sourceDocumentId);
+    if (readingByDocument.size >= 3) readingByDocument.delete(readingByDocument.keys().next().value ?? '');
+    readingByDocument.set(key, reading);
+    return reading;
   },
 
-  async findSourcePassages() {
-    throw new Error('Located passage search requires the optional NOFO Desk source reader.');
+  async findSourcePassages(opportunityId, sourceDocumentId, query, limit) {
+    const key = readingKey(opportunityId, sourceDocumentId);
+    const reading = readingByDocument.get(key)
+      ?? await providerDirectService.readListedDocument(opportunityId, sourceDocumentId);
+    return findProviderPassages(reading, query, limit);
   },
 };
