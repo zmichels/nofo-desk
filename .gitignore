@@ -1,0 +1,8 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+**/.power/
+site/src/generated/
+site/node_modules/
+site/dist/
