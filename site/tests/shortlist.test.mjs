@@ -97,6 +97,7 @@ test('brief links the provider record, escapes Markdown and keeps source limits 
   assert.match(brief, /https:\/\/www\.grants\.gov\/search-results-detail\/359855/);
   assert.match(brief, /Oct 19, 2026 \(forecast; confirm\)/);
   assert.match(brief, /Not supplied/);
+  assert.match(brief, /### Applicant categories listed by the provider/);
   assert.match(brief, /Listed source links \(contents not assessed in this brief\)/);
   assert.match(brief, /https:\/\/www\.grants\.gov\/notice\.html/);
   assert.doesNotMatch(brief, /files\.internal|user:pass|not-the-source/);

@@ -170,9 +170,13 @@ export function buildMarkdownBrief(details: readonly OpportunityDetail[], genera
     lines.push(`## ${markdownText(row.number)} — ${markdownText(row.title)}`, '');
     lines.push(`- Original posting: <${row.sourceUrl}>`);
     lines.push(`- Assistance Listings: ${row.assistanceListings.length ? row.assistanceListings.map(markdownText).join(', ') : 'Not supplied'}`);
-    lines.push(`- Applicant categories: ${row.applicantCategories.length ? row.applicantCategories.map(markdownText).join(', ') : 'Not supplied'}`);
     lines.push(`- Estimated funding: ${display(row.estimatedFunding)}`);
     lines.push(`- Provider updated: ${display(row.providerUpdated)}`);
+    lines.push('', '### Applicant categories listed by the provider', '');
+    lines.push(...(row.applicantCategories.length
+      ? row.applicantCategories.map((category) => `- ${markdownText(category)}`)
+      : ['Not supplied.']));
+    lines.push('');
     const linked = detail.documents.flatMap((document) => {
       const url = publicHttpsUrl(document.url);
       return url ? [`  - [${markdownText(document.title || 'Listed file')}](<${url}>)`] : [];
